@@ -1,10 +1,10 @@
 from sklearn.ensemble import RandomForestClassifier
 import sys
+import pandas as pd
 import numpy as np
 
 
 def open_file(index, arr):
-    print sys.argv[index]
     try:
         with open(sys.argv[index]) as f:
             for i, line in enumerate(f):
@@ -22,9 +22,18 @@ def make_dict(my_dict, data_array):
         my_dict[int(dat[0])] = str(dat[1:])
 
 
-def convert_genres(genre):
+def convert_genres():
+    dataframe = pd.read_csv('inputs/movie.txt')
+
+    counter = 3
+    for value in (pd.Series.unique(dataframe['Genre'])):
+        for genre in value.split('|'):
+            if genre not in g_dict:
+                counter += 1
+                g_dict[genre] = counter
+    print(g_dict)
+
     # Change this XXX
-    return np.random.randint(1, 10)
 
 
 def find_ID(arr, user_id, movie_id, index):
@@ -42,10 +51,16 @@ def find_ID(arr, user_id, movie_id, index):
         if i == 0:
             arr[index][i + 3] = int(corrected_str)
         else:
-            arr[index][i + 3] = convert_genres(corrected_str)
+            for genres in corrected_str.split('|'):
+                arr[index][g_dict[genres]] = 1
 
 
 def main():
+
+    global g_dict
+    g_dict = {}
+    convert_genres()
+
     training_data_list = []
     user_data = []
     movie_data = []
@@ -63,30 +78,31 @@ def main():
     make_dict(user_dict, user_data)
     make_dict(movie_dict, movie_data)
 
-    training_data = np.zeros((len(training_data_list), 5))
+    number_dimension = 22
+    training_data = np.zeros((len(training_data_list), number_dimension))
     ratings = np.zeros((len(training_data_list)))
 
-    test_arr = np.zeros((len(test_data), 5))
+    test_arr = np.zeros((len(test_data), number_dimension))
 
     for index, line in enumerate(training_data_list):
         # Check if errors
         find_ID(training_data, line[1], line[2], index)
         ratings[index] = line[3]
 
-    '''for index, line in enumerate(test_data):
-        find_ID(test_arr, line[1], line[2],index)
+    # print(training_data[0])
 
+    for index, line in enumerate(test_data):
+        find_ID(test_arr, line[1], line[2], index)
 
     rf = RandomForestClassifier(n_estimators=100)
     rf.fit(training_data, ratings)
-    testArr = np.zeros((len(training_data_list), 5))
     results = rf.predict(test_arr)
 
-    
-    print results[0]
-    print results[1]
-    print results[2]'''
-
+    with open('result.txt', 'w') as f:
+        f.write("Id,rating\n")
+        for index in range(len(test_data)):
+            # f.write(', '.join(map(str,[line[0],results[]]))+'\n')
+            f.write("%s,%s\n" % (test_data[index][0], int(results[index])))
 
 if __name__ == '__main__':
     main()
