@@ -98,7 +98,7 @@ def main():
     rf.fit(training_data, ratings)
     results = rf.predict(test_arr)
 
-    with open('result2.txt', 'w') as f:
+    with open('result.txt', 'w') as f:
         f.write("Id,rating\n")
         for index in range(len(test_data)):
             # f.write(', '.join(map(str,[line[0],results[]]))+'\n')
