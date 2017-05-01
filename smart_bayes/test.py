@@ -150,5 +150,5 @@ for line in test.rating:
 	rating = sorted(result, key=itemgetter(0), reverse=True)[0][1]
 	#print rating, sorted(result, key=itemgetter(0), reverse=True)
 	line[3] = rating+1
-test.write('result.txt')
+test.write('smart_result.txt')
 time_elapse('Rating Test Data ...')

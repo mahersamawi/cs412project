@@ -3,8 +3,11 @@
 To run our program:
 
 ```
-python bayes.py inputs/train.txt inputs/user.txt inputs/movie.txt inputs/test.txt
+python smart_bayes/datap.py
+python smart_bayes/test.py
 ```
-The arguments are training data, user data, movie data, and the test data in that order.
+To change data files, simply modify the contents of corresponding file in the data directory.
 
-The output of the program is the results written to a file called "Bayes_result_final.txt" (make sure there is not a file with that name or it will be overwritten by the output)
+The second time you want to run the evaluation, if you already have files produced by smart_bayes/datap.py and wish to use the same file, you can directly run the second command.
+
+The output of the program is the results written to a file called "smart_result.txt"
