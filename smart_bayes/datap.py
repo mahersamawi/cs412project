@@ -1,0 +1,209 @@
+#!/usr/bin/python
+
+# -*- coding: utf-8 -*-
+from dataclass import Train, Test, User, Movie
+
+from operator import itemgetter
+from time import time
+
+start_time = time()
+def time_elapse(info):
+	global start_time
+	now = time()
+	elapse, start_time = now - start_time, now
+	print info, 'took', elapse, 'seconds'
+
+datafile = "data/train.txt"
+train = Train(datafile);
+time_elapse('Loading '+datafile)
+datafile = "data/test.txt"
+test = Test(datafile);
+time_elapse('Loading '+datafile)
+datafile = "data/user.txt"
+user = User(datafile, train, test)
+time_elapse('Loading '+datafile)
+print user.alabel
+datafile = "data/movie.txt"
+movie = Movie(datafile, train, test)
+time_elapse('Loading '+datafile)
+print len(movie.glabel), movie.glabel
+user.write('user.txt')
+movie.write('movie.txt')
+
+for midx in range(0, len(movie.id)):
+	if not movie.id_used(midx):
+		continue
+	if len(movie.genre[midx]) > 0:
+		continue
+	#print 'Updating Moive', movie.get(midx)
+	fgen = [0] * len(movie.glabel)
+	for uidx in train.midx[midx]:
+		rating = train.rating[(uidx,midx)]
+		for m in train.uidx[uidx]:
+			if rating != train.rating[(uidx,m)]:
+				continue
+			for g in movie.genre[m]:
+				fgen[g] += 1
+	sgen = []
+	total = 0
+	for i in range(0, len(fgen)):
+		#print i, ":", movie.glabel[i], "  ", fgen[i]
+		total += fgen[i]
+	if total < 10:
+		print 'too few train data, tring year'
+		if movie.year[midx] == -1:
+			print 'no year also, do nothing'
+			continue
+		total = 0
+		year = movie.year[midx]
+		for i in range(0, len(movie.year)):
+			if i == midx or year != movie.year[i]:
+				continue
+			for g in movie.genre[i]:
+				fgen[g] += 1
+	for i in range(0, len(fgen)):
+		total += fgen[i]
+	if total < 10:
+		print 'too few year data, do nothing'
+		continue
+				
+	for i in range(0, len(fgen)):
+		sgen.append((float(fgen[i])/total, i))
+	#print sorted(sgen, key=itemgetter(0), reverse=True)
+	#sgen.sort(reverse=True);
+	cnt = 0.0
+	ths = [0.25, 0.34, 0.40]
+	stp = 0
+	last = 0.0
+	for key in sorted(sgen, key=itemgetter(0), reverse=True):
+		cnt += key[0]
+		if last / key[0] > 1.6:
+			break;
+		last = key[0];
+		#print key, movie.glabel[key[1]]
+		movie.genre[midx].append(key[1])
+		if cnt >= ths[stp]:
+			break;
+		stp += 1;
+		if stp >= len(ths):
+			break;
+time_elapse('Replacing movie genre')
+
+for midx in range(0, len(movie.id)):
+	if not movie.id_used(midx):
+		continue
+	if movie.year[midx] != -1:
+		continue
+	#print 'Updating Moive', movie.get(midx)
+	fyear = [0] * len(movie.ylabel)
+	for uidx in train.midx[midx]:
+		rating = train.rating[(uidx,midx)]
+		#print uidx, midx, ":", user.alabel[user.age[uidx]], "-", rating, movie.genre[midx]
+		for m in train.uidx[uidx]:
+			if rating != train.rating[(uidx,m)]:
+				continue
+			if movie.year[m] == -1:
+				continue
+			#gs = [g for g in movie.genre[midx] if g in movie.genre[m]]
+			#if len(gs) > 0:
+				#continue
+			#print movie.ylabel[movie.year[m]], movie.genre[m], gs
+			fyear[movie.year[m]] += 1;
+	syear = []
+	total = 0
+	for i in range(0, len(fyear)):
+		total += fyear[i]
+	if total < 1:
+		print 'too few train data for movie year, do nothing'
+		continue
+	for i in range(0, len(fyear)):
+		syear.append((float(fyear[i])/total, i))
+	#print sorted(syear, key=itemgetter(0), reverse=True)
+	key = sorted(syear, key=itemgetter(0), reverse=True)[0];
+	movie.year[midx] = key[1];
+	#print 'Replace with ', key, movie.ylabel[movie.year[m]]
+time_elapse('Replacing movie year')
+
+for midx in range(0, len(movie.id)):
+	if not movie.id_used(midx):
+		continue
+	if movie.year[midx] == -1:
+		print 'Still have invlaid year for movie id:', movie.get(midx)
+		for uidx in train.midx[midx]:
+			rating = train.rating[(uidx,midx)]
+			print uidx, midx, ":", user.alabel[user.age[uidx]], "-", rating, movie.genre[midx]
+		movie.year[midx] = 4
+	if len(movie.genre[midx]) == 0:
+		print 'Still have invlaid genre for movie id:', movie.get(midx)
+time_elapse('Replacing movie year and genre')
+
+for uidx in range(0, len(user.id)):
+	if not user.id_used(midx):
+		continue
+	good = True
+	if user.gender[uidx] == -1:
+		good = False
+	elif user.age[uidx] == -1:
+		good = False
+	elif user.occupation[uidx] == -1:
+		good = False
+	if good:
+		continue
+	#print 'Updating User', user.get(uidx)
+	fgender = [0] * 2
+	fage = [0] * len(user.alabel)
+	foccupation = [0] * len(user.olabel)
+	total = [0] * 3
+	for midx in train.uidx[uidx]:
+		rating = train.rating[(uidx,midx)]
+		for u in train.midx[midx]:
+			if rating != train.rating[(u,midx)]:
+				continue;
+			if user.gender[u] != -1:
+				fgender[user.gender[u]] += 1
+			if user.age[u] != -1:
+				fage[user.age[u]] += 1
+			if user.occupation[u] != -1:
+				foccupation[user.occupation[u]] += 1
+	for i in fgender:
+		total[0] += i
+	for i in fage:
+		total[1] += i
+	for i in foccupation:
+		total[2] += i
+	good = True
+	if user.gender[uidx] == -1:
+		sfreq = []
+		if total[0] > 0:
+			for i in range(0, len(fgender)):
+				sfreq.append((float(fgender[i])/total[0], i))
+			#print sorted(sfreq, key=itemgetter(0), reverse=True)
+			key = sorted(sfreq, key=itemgetter(0), reverse=True)[0];
+			user.gender[uidx] = key[1];
+		else:
+			good = False
+	if user.age[uidx] == -1:
+		sfreq = []
+		if total[1] > 0:
+			for i in range(0, len(fage)):
+				sfreq.append((float(fage[i])/total[1], i))
+			#print sorted(sfreq, key=itemgetter(0), reverse=True)
+			key = sorted(sfreq, key=itemgetter(0), reverse=True)[0];
+			user.age[uidx] = key[1];
+		else:
+			good = False
+	if user.occupation[uidx] == -1:
+		sfreq = []
+		if total[2] > 0:
+			for i in range(0, len(foccupation)):
+				sfreq.append((float(foccupation[i])/total[2], i))
+			#print sorted(sfreq, key=itemgetter(0), reverse=True)
+			key = sorted(sfreq, key=itemgetter(0), reverse=True)[0];
+			user.occupation[uidx] = key[1];
+		else:
+			good = False
+	if not good:
+		print 'Still Need Update User', user.get(uidx)
+time_elapse('Replacing user data')
+user.write('new_user.txt')
+movie.write('new_movie.txt')
