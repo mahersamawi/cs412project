@@ -19,7 +19,6 @@ def time_elapse(info):
 	print info, 'took', elapse, 'seconds'
 
 
-
 '''
 first convert all (user,movie converted) datafiles into dataclass information
 '''
@@ -35,6 +34,7 @@ time_elapse('Loading '+datafile)
 datafile = "new_movie.txt"
 movie = Movie(datafile, train, test)
 time_elapse('Loading '+datafile)
+
 
 
 '''
@@ -76,8 +76,9 @@ class MovieData:
 		self.age = [[1 for col in range(ages)] for row in range(5)]
 		self.occupation = [[1 for col in range(occs)] for row in range(5)]
 
+
 '''
-Calculating Bayes possibilities for user part with laplace smoothing
+Calculating modified Bayes possibilities for user part with laplace smoothing
 '''
 mdata = [-1] * len(movie.id);
 next = []
@@ -102,16 +103,15 @@ for mid in range(len(movie.id)):
 	for r in range(5):
 		g = mdata[mid].gender[r];
 		for i in range(len(g)):
-			g[i] = float(g[i]) / gt
+			g[i] = 100.0 * float(g[i]) / float(gt)
 		a = mdata[mid].age[r];
 		for i in range(len(a)):
-			a[i] = float(a[i]) / at
+			a[i] = 100.0 * float(a[i]) / float(at)
 		o = mdata[mid].occupation[r];
 		for i in range(len(o)):
-			o[i] = float(o[i]) / ot
+			o[i] = 100.0 * float(o[i]) / float(ot)
 time_elapse('Generating Movie Data ...')
 	
-
 
 '''
 class UserData: initial a possibility table of specified size for each movie attribute
@@ -121,6 +121,7 @@ class UserData:
 		self.genre = [[1 for col in range(gns)] for row in range(5)]
 		self.year = [[1 for col in range(yrs)] for row in range(5)]
 	
+
 '''
 Calculating Bayes possibilities for movie part with laplace smoothing
 '''
@@ -143,15 +144,29 @@ for uid in range(len(user.id)):
 	for r in range(5):
 		g = udata[uid].genre[r];
 		for i in range(len(g)):
-			g[i] = float(g[i]) / gt
+			g[i] = 100.0 * float(g[i]) / float(gt)
 		y = udata[uid].year[r];
 		for i in range(len(y)):
-			y[i] = float(y[i]) / yt
+			y[i] = 100.0 * float(y[i]) / float(yt)
 time_elapse('Generating User Data ...')
 
+
+
+
+
+
+
 '''
-Combine User and Movie parts to figure out the final rating of each test data
+The last part: Combine User and Movie parts to figure out the final rating of each test data
 '''
+import sys
+methods = ['default', 'user', 'movie', 'weight']
+method = 0
+if len(sys.argv) > 1:
+	if sys.argv[1].lower() in methods:
+		method = methods.index(sys.argv[1].lower())
+
+print "Start Rating with method [%s]" % methods[method]
 for line in test.rating:
 	if line[0] == -1:
 		continue
@@ -168,19 +183,39 @@ for line in test.rating:
 			print 'Wrong at', uid, mid
 			exit()
 		y = movie.year[mid]
-		ur[r] = float(max(gr)) * udata[uid].year[r][y]
-        #gr = float(sum(gr)) / float(len(gr))
-        #ur[r] = float(gr) * float(udata[uid].year[r][y])
+		#ur[r] = float(max(gr)) * float(udata[uid].year[r][y])
+		gr = float(sum(gr)) / float(len(gr))
+		ur[r] = float(gr) * float(udata[uid].year[r][y])
 	for r in range(5):
 		g = user.gender[uid]
 		a = user.age[uid]
 		o = user.occupation[uid]
-		mr[r] = float(mdata[mid].gender[r][g]) * mdata[mid].age[r][a] * mdata[mid].occupation[r][o]
+		mr[r] = float(mdata[mid].gender[r][g]) * float(mdata[mid].age[r][a]) * float(mdata[mid].occupation[r][o])
 	result = []
-	for r in range(5):
-		result.append((ur[r]*mr[r], r))
+	if   method == 3:
+		# weight user data + movie data
+		for r in range(5):
+			w = ur[r]*0.6
+			w += mr[r]*0.4
+			w += ur[r]*mr[r]
+			result.append((w, r))
+	elif method == 2:
+		# movie data only
+		for r in range(5):
+			result.append((mr[r], r))
+	elif method == 1:
+		# user data only
+		for r in range(5):
+			result.append((ur[r], r))
+	else:
+		#default for user data + movie data
+		for r in range(5):
+			result.append((ur[r]*mr[r], r))
 	rating = sorted(result, key=itemgetter(0), reverse=True)[0][1]
 	#print rating, sorted(result, key=itemgetter(0), reverse=True)
 	line[3] = rating+1
-test.write('smart_result.txt')
+outfile = 'smart_result.txt'
+if method != 0:
+	outfile = '%s_result.txt' % methods[method]
+test.write(outfile)
 time_elapse('Rating Test Data ...')
