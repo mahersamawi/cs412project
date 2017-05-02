@@ -6,13 +6,21 @@ from dataclass import Train, Test, User, Movie
 from operator import itemgetter
 from time import time
 
+# sequential code style
 start_time = time()
+'''
+helper funciton time_elapse: print the input information and time information
+can be both used to debug and tell the current progress
+'''
 def time_elapse(info):
 	global start_time
 	now = time()
 	elapse, start_time = now - start_time, now
 	print info, 'took', elapse, 'seconds'
 
+'''
+first convert all datafile into dataclass information
+'''
 datafile = "data/train.txt"
 train = Train(datafile);
 time_elapse('Loading '+datafile)
@@ -27,9 +35,15 @@ datafile = "data/movie.txt"
 movie = Movie(datafile, train, test)
 time_elapse('Loading '+datafile)
 print len(movie.glabel), movie.glabel
-user.write('user.txt')
+user.write('user.txt') # check if info is printed correctly
 movie.write('movie.txt')
 
+'''
+Then for each N/A value in genres do as followed:
+1. for all the movies rated the same score by the same users (associated in the train data), consider their genres 
+2. If still no enough data, consider the genres of all movies in the same year
+In general, a heuristical imputation based on nearest movie
+'''
 for midx in range(0, len(movie.id)):
 	if not movie.id_used(midx):
 		continue
@@ -89,6 +103,11 @@ for midx in range(0, len(movie.id)):
 			break;
 time_elapse('Replacing movie genre')
 
+'''
+For missing values in year of movie
+Do the same kind of imputation to year except not considering complexity of genres, just do following for each movie with year missing:
+1. for all the movies rated the same score by the same users, record year. replace with most count
+'''
 for midx in range(0, len(movie.id)):
 	if not movie.id_used(midx):
 		continue
@@ -137,6 +156,12 @@ for midx in range(0, len(movie.id)):
 		print 'Still have invlaid genre for movie id:', movie.get(midx)
 time_elapse('Replacing movie year and genre')
 
+
+'''
+For missing values of any user attribute
+Do the same kind of imputation as year's except from user's perspective
+1. for all the users rated the same score for the same movie, record each attribute. replace any missing value with corresponding most count 
+'''
 for uidx in range(0, len(user.id)):
 	if not user.id_used(midx):
 		continue

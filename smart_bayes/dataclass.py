@@ -2,6 +2,13 @@
 from operator import itemgetter
 from time import time
 
+'''
+class Train: data structure and functions for training data
+
+__init__: input the training data file, store the converted information in ratings, uidx and midx
+is_uid: check if a number is a user_Id occured in training data
+is_mid: check if a number is a movie_Id occured in training data
+'''
 class Train:
 	def __init__(self, datafile):
 		self.rating = {}
@@ -41,6 +48,14 @@ class Train:
 		return False
 
 
+'''
+class Test: data structure and functions for training data
+
+__init__: input the testing data file, store the converted information in ratings, uidx and midx 
+is_uid: check if a number is a user_Id occured in testing data
+is_mid: check if a number is a movie_Id occured in testing data
+write: write the stored information to given file (input of the function)
+'''
 class Test:
 	def __init__(self, datafile):
 		self.rating = [[-1, 0, 0, 0]]
@@ -86,6 +101,15 @@ class Test:
 			f.close()	
 
 
+'''
+class User: data structure and functions for user data
+
+__init__: input the user data file and Train+Test objects, store the converted information in symbolized attributes variables and labels (for unique value)
+
+get: input id, return the attributes information
+id_used: check if a number is a valid user_Id
+write: write the stored information to given file (input of the function) 
+'''
 class User:
 	def __init__(self, datafile, train, test):
 		self.id = []
@@ -173,6 +197,14 @@ class User:
 			f.close()	
 
 
+'''
+class Movie: data structure and functions for movie data
+
+__init__: input the movie data file and Train+Test objects, store the converted discretized information in symbolized attributes variables and labels (for unique value)
+get: input id, return the attributes information
+id_used: check if a number is a valid movie_Id
+write: write the stored information to given file (input of the function) 
+'''
 class Movie:
 	def __init__(self, datafile, train, test):
 		self.id = []

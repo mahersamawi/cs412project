@@ -6,7 +6,12 @@ from dataclass import Train, Test, User, Movie
 from operator import itemgetter
 from time import time
 
+# sequential code style
 start_time = time()
+'''
+helper funciton time_elapse: print the input information and time information
+can be both used to debug and tell the current progress
+'''
 def time_elapse(info):
 	global start_time
 	now = time()
@@ -15,6 +20,9 @@ def time_elapse(info):
 
 
 
+'''
+first convert all (user,movie converted) datafiles into dataclass information
+'''
 datafile = "data/train.txt"
 train = Train(datafile);
 time_elapse('Loading '+datafile)
@@ -28,6 +36,10 @@ datafile = "new_movie.txt"
 movie = Movie(datafile, train, test)
 time_elapse('Loading '+datafile)
 
+
+'''
+data validation
+'''
 for line in test.rating:
 	id, uid, mid, rating = line
 	if id == -1:
@@ -54,12 +66,19 @@ for line in test.rating:
 		print 'Imcompleted Movie', mid, movie.get(mid)
 time_elapse('Checking User and Movie...')
 
+
+'''
+class MovieData: initial a possibility table of specified size for each user attribute (since cross evaluated)
+'''
 class MovieData:
 	def __init__(self, ages, occs):
 		self.gender = [[1 for col in range(2)] for row in range(5)]
 		self.age = [[1 for col in range(ages)] for row in range(5)]
 		self.occupation = [[1 for col in range(occs)] for row in range(5)]
 
+'''
+Calculating Bayes possibilities for user part with laplace smoothing
+'''
 mdata = [-1] * len(movie.id);
 next = []
 for mid in range(len(movie.id)):
@@ -92,11 +111,19 @@ for mid in range(len(movie.id)):
 			o[i] = float(o[i]) / ot
 time_elapse('Generating Movie Data ...')
 	
+
+
+'''
+class UserData: initial a possibility table of specified size for each movie attribute
+'''
 class UserData:
 	def __init__(self, gns, yrs):
 		self.genre = [[1 for col in range(gns)] for row in range(5)]
 		self.year = [[1 for col in range(yrs)] for row in range(5)]
 	
+'''
+Calculating Bayes possibilities for movie part with laplace smoothing
+'''
 udata = [-1] * len(user.id);
 for uid in range(len(user.id)):
 	if not user.id_used(uid):
@@ -122,6 +149,9 @@ for uid in range(len(user.id)):
 			y[i] = float(y[i]) / yt
 time_elapse('Generating User Data ...')
 
+'''
+Combine User and Movie parts to figure out the final rating of each test data
+'''
 for line in test.rating:
 	if line[0] == -1:
 		continue
@@ -139,6 +169,8 @@ for line in test.rating:
 			exit()
 		y = movie.year[mid]
 		ur[r] = float(max(gr)) * udata[uid].year[r][y]
+        #gr = float(sum(gr)) / float(len(gr))
+        #ur[r] = float(gr) * float(udata[uid].year[r][y])
 	for r in range(5):
 		g = user.gender[uid]
 		a = user.age[uid]
