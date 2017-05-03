@@ -190,7 +190,7 @@ for line in test.rating:
 		g = user.gender[uid]
 		a = user.age[uid]
 		o = user.occupation[uid]
-		mr[r] = float(mdata[mid].gender[r][g]) * float(mdata[mid].age[r][a]) * float(mdata[mid].occupation[r][o])
+		mr[r] = float(mdata[mid].gender[r][g]) * float(mdata[mid].age[r][a]) #* float(mdata[mid].occupation[r][o])
 	result = []
 	if   method == 3:
 		# weight user data + movie data
